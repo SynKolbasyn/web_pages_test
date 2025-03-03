@@ -1,6 +1,7 @@
 """A module for working with a database."""
 
 
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import (
     Mapped,
     declarative_base,
@@ -22,6 +23,10 @@ class User(Base):
     last_name: Mapped[str] = mapped_column()
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
 
+    def as_dict(self) -> dict[str, str]:
+        """Represent user table as dict."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 
 class Post(Base):
 
@@ -32,8 +37,14 @@ class Post(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column()
     text: Mapped[str] = mapped_column()
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
     author: Mapped["User"] = relationship(back_populates="posts")
     images: Mapped[list["Image"]] = relationship(back_populates="post")
+
+    def as_dict(self) -> dict[str, str]:
+        """Represent post table as dict."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 class Image(Base):
@@ -43,6 +54,11 @@ class Image(Base):
     __tablename__ = "images"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    post: Mapped["Post"] = relationship(back_populates="images")
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"))
     image: Mapped[bytes] = mapped_column()
 
+    post: Mapped["Post"] = relationship(back_populates="images")
+
+    def as_dict(self) -> dict[str, str]:
+        """Represent image table as dict."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

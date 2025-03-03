@@ -12,8 +12,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/
 
-COPY ./pyproject.toml ./
+
+COPY ./.python-version ./
 RUN $HOME/.local/bin/uv python install
+
+COPY ./pyproject.toml ./
 RUN $HOME/.local/bin/uv sync --no-dev
 
 COPY ./src/ ./src/
