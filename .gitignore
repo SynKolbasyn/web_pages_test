@@ -14,5 +14,8 @@ wheels/
 *.sqlite3
 /.env
 /commands
+/.vscode/
+/.ruff_cache/
+/.mypy_cache/
 /database/
 /redisdata/
