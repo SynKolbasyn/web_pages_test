@@ -1,0 +1,23 @@
+[project]
+name = "web-pages-test"
+version = "0.1.0"
+description = "Web pages test task"
+authors = [
+    { name = "Andrew Kozmin", email = "syn.kolbasyn.06@gmail.com" }
+]
+requires-python = ">=3.13, <3.14"
+dependencies = [
+    "alembic>=1.14.1",
+    "fastapi[standard]>=0.115.11",
+    "gunicorn>=23.0.0",
+    "pydantic>=2.10.6",
+    "sqlalchemy>=2.0.38",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pre-commit>=4.1.0",
+    "ruff>=0.9.9",
+]
