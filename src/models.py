@@ -21,7 +21,13 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     first_name: Mapped[str] = mapped_column()
     last_name: Mapped[str] = mapped_column()
+
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
+
+    def __init__(self, first_name: str, last_name: str) -> None:
+        """Create User object."""
+        self.first_name = first_name
+        self.last_name = last_name
 
     def as_dict(self) -> dict[str, str]:
         """Represent user table as dict."""

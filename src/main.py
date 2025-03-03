@@ -20,7 +20,7 @@ async def get_help() -> dict[str, str]:
     }
 
 
-@app.get("/get_user/{user_id:int}/")
+@app.get("/user/get/{user_id:int}/")
 async def get_user(_: Request, user_id: int) -> UJSONResponse:
     """Return info about user."""
     try:
@@ -30,4 +30,25 @@ async def get_user(_: Request, user_id: int) -> UJSONResponse:
             {"status": "error", "reason": "User not found"},
             HTTPStatus.NOT_FOUND,
         )
-    return UJSONResponse(user.as_dict())
+    return UJSONResponse(user)
+
+
+@app.post("/user/create/")
+async def create_user(request: Request) -> UJSONResponse:
+    """Create user and return info about it."""
+    data = await request.json()
+    user = await database.create_user(**data)
+    return UJSONResponse(user)
+
+
+@app.delete("/user/delete/{user_id:int}/")
+async def delete_user(_: Request, user_id: int) -> UJSONResponse:
+    """Delete user and return info about it."""
+    try:
+        user = await database.delete_user(user_id)
+    except NoResultFound:
+        return UJSONResponse(
+            {"status": "error", "reason": "User not found"},
+            HTTPStatus.NOT_FOUND,
+        )
+    return UJSONResponse(user)

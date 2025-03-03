@@ -9,5 +9,6 @@ repos:
       - id: mypy
         name: Mypy
         entry: uv run mypy
+        args: [--config-file=./pyproject.toml]
         language: system
-        types: [python]
+        files: 'src\/.*\.py'

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from ujson import dumps, loads
 
 from src.models import User
 
@@ -28,15 +29,36 @@ engine = create_async_engine(DATABASE_URL, echo=True)
 Session = async_sessionmaker(engine)
 
 
-async def get_user(user_id: int) -> User:
+async def get_user(user_id: int) -> dict[str, str]:
     """Get user from database by id."""
     user = await redis.get(f"user:{user_id}")
     if user:
-        return User(**user.decode())
+        return loads(user)
 
     async with Session.begin() as session:
         stmt = select(User).where(User.id == user_id)
-        user = await session.execute(stmt)
-        user = user.scalar_one()
+        user = (await session.execute(stmt)).scalar_one()
         redis.setex(f"user:{user_id}", 3600, user.as_dict())
-        return user
+        return user.as_dict()
+
+
+async def create_user(first_name: str, last_name: str) -> dict[str, str]:
+    """Create user in database."""
+    async with Session.begin() as session:
+        user = User(first_name=first_name, last_name=last_name)
+        session.add(user)
+        await session.flush()
+        await session.refresh(user)
+        await redis.setex(f"user:{user.id}", 3600, dumps(user.as_dict()))
+        return user.as_dict()
+
+
+async def delete_user(user_id: int) -> dict[str, str]:
+    """Get user from database by id."""
+    async with Session.begin() as session:
+        stmt = select(User).where(User.id == user_id)
+        user = (await session.execute(stmt)).scalar_one()
+        user_data = user.as_dict()
+        await session.delete(user)
+        redis.delete(f"user:{user_id}")
+        return user_data
