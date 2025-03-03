@@ -31,4 +31,18 @@ class Post(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column()
+    text: Mapped[str] = mapped_column()
     author: Mapped["User"] = relationship(back_populates="posts")
+    images: Mapped[list["Image"]] = relationship(back_populates="post")
+
+
+class Image(Base):
+
+    """A class for image table."""
+
+    __tablename__ = "images"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    post: Mapped["Post"] = relationship(back_populates="images")
+    image: Mapped[bytes] = mapped_column()
+
