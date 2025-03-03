@@ -24,7 +24,8 @@ POSTGRES_USER = environ["POSTGRES_USER"]
 POSTGRES_PASSWORD = environ["POSTGRES_PASSWORD"]
 POSTGRES_DB = environ["POSTGRES_DB"]
 DB_PORT = environ["DB_PORT"]
-DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql:{DB_PORT}/{POSTGRES_DB}"
+DB_HOST = environ["DB_HOST"]
+DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{POSTGRES_DB}"
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)

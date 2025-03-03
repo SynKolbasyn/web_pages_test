@@ -14,7 +14,8 @@ POSTGRES_USER = environ["POSTGRES_USER"]
 POSTGRES_PASSWORD = environ["POSTGRES_PASSWORD"]
 POSTGRES_DB = environ["POSTGRES_DB"]
 DB_PORT = environ["DB_PORT"]
-DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgresql:{DB_PORT}/{POSTGRES_DB}"
+DB_HOST = environ["DB_HOST"]
+DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{POSTGRES_DB}"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 Session = async_sessionmaker(engine)
