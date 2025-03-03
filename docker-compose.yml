@@ -1,0 +1,36 @@
+services:
+  service:
+    container_name: "service"
+    hostname: "service"
+    build:
+      dockerfile: "./Dockerfile"
+    ports:
+      - "80:80"
+    depends_on:
+      - "postgresql"
+    restart: "always"
+  
+  postgresql:
+    hostname: "postgresql"
+    container_name: "postgresql"
+    image: "postgres:latest"
+    shm_size: 128mb
+    env_file:
+      - "./.env"
+    volumes:
+      - "./database/:/var/lib/postgresql/data/"
+    ports:
+      - "${DB_PORT}"
+    restart: "always"
+  
+  redis:
+    hostname: "redis"
+    container_name: "redis"
+    image: "redis:latest"
+    env_file:
+      - "./.env"
+    ports:
+      - "${REDIS_PORT}"
+    volumes:
+      - "./redisdata/:/data/"
+    restart: "always"
