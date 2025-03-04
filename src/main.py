@@ -46,6 +46,24 @@ async def get_help() -> dict[str, str]:
     }
 
 
+@app.post("/user/create/")
+async def create_user(
+        request: Request,
+        admin_username: Annotated[str, Depends(check_user)],
+    ) -> UJSONResponse:
+    """Create user and return info about it."""
+    data = await request.json()
+    logging.info("CREATE USER: %s -> %s", admin_username, data)
+    try:
+        user = await database.create_user(**data)
+    except IntegrityError:
+        return UJSONResponse(
+            {"status": "error", "reason": "User already exists"},
+            HTTPStatus.CONFLICT,
+        )
+    return UJSONResponse(user)
+
+
 @app.get("/user/get/{user_id:int}/")
 async def get_user(
         _: Request,
@@ -64,20 +82,21 @@ async def get_user(
     return UJSONResponse(user)
 
 
-@app.post("/user/create/")
-async def create_user(
+@app.put("/user/update/{user_id:int}/")
+async def update_user(
         request: Request,
+        user_id: int,
         admin_username: Annotated[str, Depends(check_user)],
     ) -> UJSONResponse:
-    """Create user and return info about it."""
+    """Update user and return info about it."""
     data = await request.json()
-    logging.info("CREATE USER: %s -> %s", admin_username, data)
+    logging.info("UPDATE USER: %s -> %s -> %s", admin_username, user_id, data)
     try:
-        user = await database.create_user(**data)
-    except IntegrityError:
+        user = await database.update_user(user_id, data)
+    except NoResultFound:
         return UJSONResponse(
-            {"status": "error", "reason": "User already exists"},
-            HTTPStatus.CONFLICT,
+            {"status": "error", "reason": "User not found"},
+            HTTPStatus.NOT_FOUND,
         )
     return UJSONResponse(user)
 

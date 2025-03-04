@@ -42,19 +42,6 @@ async def is_admin(login: str, password: str) -> bool:
         return user.is_admin
 
 
-async def get_user(user_id: int) -> dict[str, str]:
-    """Get user from database by id."""
-    user = await redis.get(f"user:{user_id}")
-    if user:
-        return loads(user)
-
-    async with Session.begin() as session:
-        stmt = select(User).where(User.id == user_id)
-        user = (await session.execute(stmt)).scalar_one()
-        redis.setex(f"user:{user_id}", 3600, user.as_dict())
-        return user.as_dict()
-
-
 async def create_user(
         login: str,
         password: str,
@@ -80,11 +67,42 @@ async def create_user(
         return user.as_dict()
 
 
+async def get_user(user_id: int) -> dict[str, str]:
+    """Get user from database by id."""
+    user = await redis.get(f"user:{user_id}")
+    if user:
+        return loads(user)
+
+    async with Session.begin() as session:
+        stmt = select(User).where(User.id == user_id)
+        user = (await session.execute(stmt)).scalar_one()
+        redis.setex(f"user:{user_id}", 3600, user.as_dict())
+        return user.as_dict()
+
+
+async def update_user(
+        user_id: int,
+        user_data: dict[str, str | int | bool],
+    ) -> dict[str, str]:
+    """Update user in database."""
+    password_hash = sha3_512(str(user_data["password"]).encode()).hexdigest()
+    async with Session.begin() as session:
+        stmt = select(User).where(User.id == user_id)
+        user = (await session.execute(stmt)).scalar_one()
+        user.login = str(user_data["login"])
+        user.password = password_hash
+        user.first_name = str(user_data["first_name"])
+        user.last_name = str(user_data["last_name"])
+        user.is_admin = bool(user_data["is_admin"])
+        await redis.setex(f"user:{user_id}", 3600, dumps(user.as_dict()))
+        return user.as_dict()
+
+
 async def delete_user(user_id: int) -> dict[str, str]:
     """Get user from database by id."""
     async with Session.begin() as session:
         stmt = select(User).where(User.id == user_id)
         user = (await session.execute(stmt)).scalar_one()
         await session.delete(user)
-        redis.delete(f"user:{user_id}")
+        await redis.delete(f"user:{user_id}")
         return user.as_dict()
