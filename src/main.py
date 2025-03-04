@@ -27,8 +27,9 @@ logging.basicConfig(
 async def check_admin(
         credentials: Annotated[HTTPBasicCredentials, Depends(security)],
     ) -> str:
-    """Check user access."""
+    """Check admin access."""
     logging.info("AUTHORIZATION: %s", credentials.username)
+
     try:
         if await database.is_admin(credentials.username, credentials.password):
             return credentials.username
@@ -42,6 +43,7 @@ async def check_user(
     ) -> int:
     """Check user access."""
     logging.info("AUTHORIZATION: %s", credentials.username)
+
     try:
         return await database.is_correct(
             credentials.username,
@@ -74,7 +76,9 @@ async def create_user(
             {"status": "error", "reason": "Bad request"},
             HTTPStatus.BAD_REQUEST,
         )
+
     logging.info("CREATE USER: %s -> %s", admin_username, user_data)
+
     try:
         user = await database.create_user(user_data)
     except IntegrityError:
@@ -93,6 +97,7 @@ async def get_user(
     ) -> UJSONResponse:
     """Return info about user."""
     logging.info("GET USER: %s -> %s", admin_username, user_id)
+
     try:
         user = await database.get_user(user_id)
     except NoResultFound:
@@ -129,9 +134,11 @@ async def update_user(
             {"status": "error", "reason": "Bad request"},
             HTTPStatus.BAD_REQUEST,
         )
+
     logging.info(
         "UPDATE USER: %s -> %s -> %s", admin_username, user_id, user_data,
     )
+
     try:
         user = await database.update_user(user_id, user_data)
     except NoResultFound:
@@ -150,6 +157,7 @@ async def delete_user(
     ) -> UJSONResponse:
     """Delete user and return info about it."""
     logging.info("DELETE USER: %s -> %s", admin_username, user_id)
+
     try:
         user = await database.delete_user(user_id)
     except NoResultFound:
@@ -174,6 +182,7 @@ async def create_post(
             {"status": "error", "reason": "Bad request"},
             HTTPStatus.BAD_REQUEST,
         )
+
     logging.info("CREATE POST: %s -> %s", user_id, post_data)
     post = await database.create_post(user_id, post_data)
     return UJSONResponse(post)
@@ -187,6 +196,7 @@ async def get_post(
     ) -> UJSONResponse:
     """Return info about post."""
     logging.info("GET POST: %s -> %s", user_id, post_id)
+
     try:
         post = await database.get_post(post_id)
     except NoResultFound:
@@ -244,6 +254,7 @@ async def delete_post(
     ) -> UJSONResponse:
     """Delete post and return info about it."""
     logging.info("DELETE USER: %s -> %s", user_id, post_id)
+
     try:
         post = await database.delete_post(user_id, post_id)
     except NoResultFound:
