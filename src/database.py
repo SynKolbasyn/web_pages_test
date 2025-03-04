@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from ujson import dumps, loads
 
 from src import validators
-from src.models import User
+from src.models import Post, User
 
 load_dotenv()
 
@@ -43,6 +43,18 @@ async def is_admin(login: str, password: str) -> bool:
         return user.is_admin
 
 
+async def is_correct(login: str, password: str) -> int:
+    """Check if user credentials is correct."""
+    async with Session.begin() as session:
+        password_hash = sha3_512(password.encode()).hexdigest()
+        stmt = select(User).column(User.id).where(
+            User.login == login,
+            User.password == password_hash,
+        )
+        user = (await session.execute(stmt)).scalar_one()
+        return user.id
+
+
 async def create_user(user_data: validators.User) -> dict[str, str]:
     """Create user in database."""
     password_hash = sha3_512(
@@ -64,7 +76,7 @@ async def create_user(user_data: validators.User) -> dict[str, str]:
 
 
 async def get_user(user_id: int) -> dict[str, str]:
-    """Get user from database by id."""
+    """Get user from database."""
     user = await redis.get(f"user:{user_id}")
     if user:
         return loads(user)
@@ -81,9 +93,7 @@ async def get_all_users() -> list[dict[str, str]]:
     async with Session.begin() as session:
         stmt = select(User)
         users = (await session.execute(stmt)).scalars().all()
-        all_users = [user.as_dict() for user in users]
-        redis.setex("users", 3600, dumps(all_users))
-        return all_users
+        return [user.as_dict() for user in users]
 
 
 async def update_user(
@@ -107,10 +117,74 @@ async def update_user(
 
 
 async def delete_user(user_id: int) -> dict[str, str]:
-    """Get user from database by id."""
+    """Delete user from database."""
     async with Session.begin() as session:
         stmt = select(User).where(User.id == user_id)
         user = (await session.execute(stmt)).scalar_one()
         await session.delete(user)
         await redis.delete(f"user:{user_id}")
         return user.as_dict()
+
+
+async def create_post(
+        user_id: int,
+        post_data: validators.Post,
+    ) -> dict[str, str]:
+    """Create post in database."""
+    async with Session.begin() as session:
+        post = Post(
+            user_id=user_id,
+            title=post_data.title,
+            text=post_data.text,
+        )
+        session.add(post)
+        await session.flush()
+        await session.refresh(post)
+        await redis.setex(f"post:{post.id}", 3600, dumps(post.as_dict()))
+        return post.as_dict()
+
+
+async def get_post(post_id: int) -> dict[str, str]:
+    """Get post from database."""
+    post = await redis.get(f"post:{post_id}")
+    if post:
+        return loads(post)
+
+    async with Session.begin() as session:
+        stmt = select(Post).where(Post.id == post_id)
+        post = (await session.execute(stmt)).scalar_one()
+        redis.setex(f"post:{post.id}", 3600, dumps(post.as_dict()))
+        return post.as_dict()
+
+
+async def get_all_posts() -> list[dict[str, str]]:
+    """Get all posts from database."""
+    async with Session.begin() as session:
+        stmt = select(Post)
+        posts = (await session.execute(stmt)).scalars().all()
+        return [post.as_dict() for post in posts]
+
+
+async def update_post(
+        user_id: int,
+        post_id: int,
+        post_data: validators.Post,
+    ) -> dict[str, str]:
+    """Update post in database."""
+    async with Session.begin() as session:
+        stmt = select(Post).where(Post.id == user_id, Post.user_id == user_id)
+        post = (await session.execute(stmt)).scalar_one()
+        post.title = post_data.title
+        post.text = post_data.text
+        await redis.setex(f"post:{post_id}", 3600, dumps(post.as_dict()))
+        return post.as_dict()
+
+
+async def delete_post(user_id: int, post_id: int) -> dict[str, str]:
+    """Delete post from database."""
+    async with Session.begin() as session:
+        stmt = select(Post).where(Post.id == post_id, Post.user_id == user_id)
+        post = (await session.execute(stmt)).scalar_one()
+        await session.delete(post)
+        await redis.delete(f"post:{post_id}")
+        return post.as_dict()

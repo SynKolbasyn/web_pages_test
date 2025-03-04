@@ -13,3 +13,11 @@ class User(BaseModel):
     first_name: str
     last_name: str
     is_admin: bool
+
+
+class Post(BaseModel):
+
+    """Post object validator."""
+
+    title: str
+    text: str

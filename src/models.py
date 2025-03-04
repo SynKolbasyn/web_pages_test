@@ -62,6 +62,12 @@ class Post(Base):
     author: Mapped["User"] = relationship(back_populates="posts")
     images: Mapped[list["Image"]] = relationship(back_populates="post")
 
+    def __init__(self, title: str, text: str, user_id: int) -> None:
+        """Create Post object."""
+        self.title = title
+        self.text = text
+        self.user_id = user_id
+
     def as_dict(self) -> dict[str, str]:
         """Represent post table as dict."""
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
