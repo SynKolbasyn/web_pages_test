@@ -1,6 +1,7 @@
 """Module for working with the database."""
 
 
+from hashlib import sha3_512
 from os import environ
 
 from dotenv import load_dotenv
@@ -29,6 +30,18 @@ engine = create_async_engine(DATABASE_URL, echo=True)
 Session = async_sessionmaker(engine)
 
 
+async def is_admin(login: str, password: str) -> bool:
+    """Check if user is admin."""
+    async with Session.begin() as session:
+        password_hash = sha3_512(password.encode()).hexdigest()
+        stmt = select(User).column(User.is_admin).where(
+            User.login == login,
+            User.password == password_hash,
+        )
+        user = (await session.execute(stmt)).scalar_one()
+        return user.is_admin
+
+
 async def get_user(user_id: int) -> dict[str, str]:
     """Get user from database by id."""
     user = await redis.get(f"user:{user_id}")
@@ -42,10 +55,24 @@ async def get_user(user_id: int) -> dict[str, str]:
         return user.as_dict()
 
 
-async def create_user(first_name: str, last_name: str) -> dict[str, str]:
+async def create_user(
+        login: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        *,
+        is_admin: bool,
+    ) -> dict[str, str]:
     """Create user in database."""
+    password_hash = sha3_512(password.encode()).hexdigest()
     async with Session.begin() as session:
-        user = User(first_name=first_name, last_name=last_name)
+        user = User(
+            login=login,
+            password=password_hash,
+            first_name=first_name,
+            last_name=last_name,
+            is_admin=is_admin,
+        )
         session.add(user)
         await session.flush()
         await session.refresh(user)
@@ -58,7 +85,6 @@ async def delete_user(user_id: int) -> dict[str, str]:
     async with Session.begin() as session:
         stmt = select(User).where(User.id == user_id)
         user = (await session.execute(stmt)).scalar_one()
-        user_data = user.as_dict()
         await session.delete(user)
         redis.delete(f"user:{user_id}")
-        return user_data
+        return user.as_dict()

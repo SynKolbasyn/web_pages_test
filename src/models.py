@@ -19,15 +19,29 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    login: Mapped[str] = mapped_column(nullable=False, unique=True)
+    password: Mapped[str] = mapped_column()
     first_name: Mapped[str] = mapped_column()
     last_name: Mapped[str] = mapped_column()
+    is_admin: Mapped[bool] = mapped_column(default=False)
 
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
 
-    def __init__(self, first_name: str, last_name: str) -> None:
+    def __init__(
+            self,
+            login: str,
+            password: str,
+            first_name: str,
+            last_name: str,
+            *,
+            is_admin: bool = False,
+        ) -> None:
         """Create User object."""
+        self.login = login
+        self.password = password
         self.first_name = first_name
         self.last_name = last_name
+        self.is_admin = is_admin
 
     def as_dict(self) -> dict[str, str]:
         """Represent user table as dict."""

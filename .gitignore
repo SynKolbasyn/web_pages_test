@@ -10,10 +10,15 @@ wheels/
 .venv
 
 
+########## custom ignores ##########
+
 *.lock
 *.sqlite3
+*.log
+
 /.env
 /commands
+
 /.vscode/
 /.ruff_cache/
 /.mypy_cache/
