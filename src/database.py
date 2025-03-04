@@ -76,6 +76,16 @@ async def get_user(user_id: int) -> dict[str, str]:
         return user.as_dict()
 
 
+async def get_all_users() -> list[dict[str, str]]:
+    """Get all users from database."""
+    async with Session.begin() as session:
+        stmt = select(User)
+        users = (await session.execute(stmt)).scalars().all()
+        all_users = [user.as_dict() for user in users]
+        redis.setex("users", 3600, dumps(all_users))
+        return all_users
+
+
 async def update_user(
         user_id: int,
         user_data: validators.User,

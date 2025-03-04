@@ -89,6 +89,17 @@ async def get_user(
     return UJSONResponse(user)
 
 
+@app.get("/user/get/all/")
+async def get_all_users(
+        _: Request,
+        admin_username: Annotated[str, Depends(check_user)],
+    ) -> UJSONResponse:
+    """Return info about all users."""
+    logging.info("GET ALL USERS: %s", admin_username)
+    users = await database.get_all_users()
+    return UJSONResponse(users)
+
+
 @app.put("/user/update/{user_id:int}/")
 async def update_user(
         request: Request,
