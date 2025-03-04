@@ -9,7 +9,7 @@ from fastapi.responses import UJSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
-from src import database
+from src import database, validators
 
 app = FastAPI()
 security = HTTPBasic()
@@ -52,10 +52,17 @@ async def create_user(
         admin_username: Annotated[str, Depends(check_user)],
     ) -> UJSONResponse:
     """Create user and return info about it."""
-    data = await request.json()
-    logging.info("CREATE USER: %s -> %s", admin_username, data)
     try:
-        user = await database.create_user(**data)
+        data = await request.json()
+        user_data = validators.User.model_validate(data)
+    except ValueError:
+        return UJSONResponse(
+            {"status": "error", "reason": "Bad request"},
+            HTTPStatus.BAD_REQUEST,
+        )
+    logging.info("CREATE USER: %s -> %s", admin_username, user_data)
+    try:
+        user = await database.create_user(user_data)
     except IntegrityError:
         return UJSONResponse(
             {"status": "error", "reason": "User already exists"},
@@ -89,10 +96,19 @@ async def update_user(
         admin_username: Annotated[str, Depends(check_user)],
     ) -> UJSONResponse:
     """Update user and return info about it."""
-    data = await request.json()
-    logging.info("UPDATE USER: %s -> %s -> %s", admin_username, user_id, data)
     try:
-        user = await database.update_user(user_id, data)
+        data = await request.json()
+        user_data = validators.User.model_validate(data)
+    except ValueError:
+        return UJSONResponse(
+            {"status": "error", "reason": "Bad request"},
+            HTTPStatus.BAD_REQUEST,
+        )
+    logging.info(
+        "UPDATE USER: %s -> %s -> %s", admin_username, user_id, user_data,
+    )
+    try:
+        user = await database.update_user(user_id, user_data)
     except NoResultFound:
         return UJSONResponse(
             {"status": "error", "reason": "User not found"},

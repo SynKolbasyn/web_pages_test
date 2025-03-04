@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from ujson import dumps, loads
 
+from src import validators
 from src.models import User
 
 load_dotenv()
@@ -42,23 +43,18 @@ async def is_admin(login: str, password: str) -> bool:
         return user.is_admin
 
 
-async def create_user(
-        login: str,
-        password: str,
-        first_name: str,
-        last_name: str,
-        *,
-        is_admin: bool,
-    ) -> dict[str, str]:
+async def create_user(user_data: validators.User) -> dict[str, str]:
     """Create user in database."""
-    password_hash = sha3_512(password.encode()).hexdigest()
+    password_hash = sha3_512(
+        user_data.password.get_secret_value().encode(),
+    ).hexdigest()
     async with Session.begin() as session:
         user = User(
-            login=login,
+            login=user_data.login,
             password=password_hash,
-            first_name=first_name,
-            last_name=last_name,
-            is_admin=is_admin,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            is_admin=user_data.is_admin,
         )
         session.add(user)
         await session.flush()
@@ -82,18 +78,20 @@ async def get_user(user_id: int) -> dict[str, str]:
 
 async def update_user(
         user_id: int,
-        user_data: dict[str, str | int | bool],
+        user_data: validators.User,
     ) -> dict[str, str]:
     """Update user in database."""
-    password_hash = sha3_512(str(user_data["password"]).encode()).hexdigest()
+    password_hash = sha3_512(
+        user_data.password.get_secret_value().encode(),
+    ).hexdigest()
     async with Session.begin() as session:
         stmt = select(User).where(User.id == user_id)
         user = (await session.execute(stmt)).scalar_one()
-        user.login = str(user_data["login"])
+        user.login = user_data.login
         user.password = password_hash
-        user.first_name = str(user_data["first_name"])
-        user.last_name = str(user_data["last_name"])
-        user.is_admin = bool(user_data["is_admin"])
+        user.first_name = user_data.first_name
+        user.last_name = user_data.last_name
+        user.is_admin = user_data.is_admin
         await redis.setex(f"user:{user_id}", 3600, dumps(user.as_dict()))
         return user.as_dict()
 
